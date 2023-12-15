@@ -1,0 +1,8 @@
+{
+  "templates": [
+    {
+      "subject": "Subject Line",
+      "body": "Email Body: In HTML"
+    }
+  ]
+}
