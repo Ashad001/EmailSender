@@ -1,12 +1,9 @@
-Certainly! Below is an updated README that includes the project structure with hidden folders:
-
----
 
 # Email Sending Script
 
 ## Overview
 
-This script is designed to send personalized emails to a list of recipients using Gmail's SMTP server. It reads recipient information from a CSV file, customizes email content based on templates, and sends emails using a rotating set of credentials. The script logs successful and unsuccessful email deliveries.
+This script is designed to send personalized emails (for cold emailing) to a list of recipients using Gmail's SMTP server. It reads recipient information from a CSV file, customizes email content based on templates, and sends emails using a rotating set of credentials. The script logs successful and unsuccessful email deliveries.
 
 ## Project Structure
 
