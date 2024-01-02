@@ -11,12 +11,15 @@ import random
 import time
 import json
 
+from plan_manager import PlanManager
+from utils import generate_email_sending_plan, save_to_json
+
 class EmailManager:
     def __init__(
         self,
-        credentials_file_path="../credentials.json",
-        templates_file_path="../templates.json",
-        log_file="../logs/sent_emails_log.txt",
+        credentials_file_path="./templates/credentials.json",
+        templates_file_path="./templates/templates.json",
+        log_file="./logs/sent_emails_log.txt",
     ):
         self.credentials_file_path = credentials_file_path
         self.templates_file_path = templates_file_path
@@ -26,7 +29,28 @@ class EmailManager:
         self.current_credential_index = 0
         self.load_credentials()
         self.load_templates()
+        
+        pm = PlanManager("./logs/current_plan.txt")
+        print(pm.current_number)    
+        self.curr_day = pm.current_number
+        pm.increment_number_for_new_day()
+            
+        if not os.path.exists("./templates/email_sending_plan.json"):
+            total_days = 25
+            initial_emails_to_send = 1
+            increment_range = (2, 4)
+            output_filename = "./templates/email_sending_plan.json"
 
+            email_plan = generate_email_sending_plan(total_days, initial_emails_to_send, increment_range)
+            save_to_json(email_plan, output_filename)
+
+            print(f"Email sending plan generated and saved to {output_filename}")
+        
+        with open('./templates/email_sending_plan.json') as f:
+            email_sending_plan = json.load(f)
+
+        self.day_plan = email_sending_plan['email_sending_plan'][str(self.curr_day)]['emails']
+        
     def load_credentials(self):
         with open(self.credentials_file_path, "r") as credentials_file:
             credentials_data = json.load(credentials_file)
@@ -93,15 +117,15 @@ class EmailManager:
 
 
 if __name__ == "__main__":
-    emails_file_path = "email.csv"
-    templates_file_path = "../templates.json"
+    emails_file_path = "./data/email.csv"
+    templates_file_path = "./templates/templates.json"
 
-    if not os.path.exists("../logs"):
-        os.mkdir("../logs")
+    if not os.path.exists("./logs"):
+        os.mkdir("./logs")
 
-    error_file = "../logs/error_log.csv"
-    all_logs = "../logs/log.txt"
-    sent_logs = "../logs/sent_emails_log.txt"
+    error_file = "./logs/error_log.csv"
+    all_logs = "./logs/log.txt"
+    sent_logs = "./logs/sent_emails_log.txt"
 
     emails_per_credential = (
         1  # Increase this number if you want to send more emails per credential
@@ -120,8 +144,17 @@ if __name__ == "__main__":
 
     email_manager = EmailManager(templates_file_path=templates_file_path)
     row_num = 0
+    email_sends_max = random.randint(email_manager.day_plan['min'], email_manager.day_plan['max'])
+    email_sends_max *= len(email_manager.credentials)
+    email_sends_count = 0
+    
+    print(email_sends_max)
+    flag = False
     for _ in range((len(emails_dataframe) // emails_per_credential) + 1):
         for _ in range(emails_per_credential):
+            if email_sends_count >= email_sends_max:
+                flag = True
+                continue
             if emails_dataframe.empty:
                 break
             if row_num >= len(emails_dataframe):
@@ -163,6 +196,8 @@ if __name__ == "__main__":
                 print(
                     f'Email sent successfully to: {receiver_email} using {email_manager.get_current_credential()["email"]}'
                 )
+                email_sends_count += 1
+
                 time.sleep(random.randint(5, 8))
                 email_manager.update_log(f"{receiver_email}")
 
@@ -177,5 +212,7 @@ if __name__ == "__main__":
                     f.write(f"Error when sending mail to: {receiver_email}\n")
                 with open(error_file, "a") as error_log:
                     error_log.write(f"{country},{tag},{name},{receiver_email}\n")
-
+        
+        if flag:
+            break
         email_manager.switch_to_next_credential()
