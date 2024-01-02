@@ -17,9 +17,9 @@ from utils import generate_email_sending_plan, save_to_json
 class EmailManager:
     def __init__(
         self,
-        credentials_file_path="../credentials.json",
-        templates_file_path="../templates.json",
-        log_file="../logs/sent_emails_log.txt",
+        credentials_file_path="./templates/credentials.json",
+        templates_file_path="./templates/templates.json",
+        log_file="./logs/sent_emails_log.txt",
     ):
         self.credentials_file_path = credentials_file_path
         self.templates_file_path = templates_file_path
@@ -30,23 +30,23 @@ class EmailManager:
         self.load_credentials()
         self.load_templates()
         
-        pm = PlanManager("../logs/current_plan.txt")
+        pm = PlanManager("./logs/current_plan.txt")
         print(pm.current_number)    
         self.curr_day = pm.current_number
         pm.increment_number_for_new_day()
             
-        if not os.path.exists("../email_sending_plan.json"):
+        if not os.path.exists("./templates/email_sending_plan.json"):
             total_days = 25
             initial_emails_to_send = 1
             increment_range = (2, 4)
-            output_filename = "../email_sending_plan.json"
+            output_filename = "./templates/email_sending_plan.json"
 
             email_plan = generate_email_sending_plan(total_days, initial_emails_to_send, increment_range)
             save_to_json(email_plan, output_filename)
 
             print(f"Email sending plan generated and saved to {output_filename}")
         
-        with open('../email_sending_plan.json') as f:
+        with open('./templates/email_sending_plan.json') as f:
             email_sending_plan = json.load(f)
 
         self.day_plan = email_sending_plan['email_sending_plan'][str(self.curr_day)]['emails']
@@ -117,15 +117,15 @@ class EmailManager:
 
 
 if __name__ == "__main__":
-    emails_file_path = "email.csv"
-    templates_file_path = "../templates.json"
+    emails_file_path = "./data/email.csv"
+    templates_file_path = "./templates/templates.json"
 
-    if not os.path.exists("../logs"):
-        os.mkdir("../logs")
+    if not os.path.exists("./logs"):
+        os.mkdir("./logs")
 
-    error_file = "../logs/error_log.csv"
-    all_logs = "../logs/log.txt"
-    sent_logs = "../logs/sent_emails_log.txt"
+    error_file = "./logs/error_log.csv"
+    all_logs = "./logs/log.txt"
+    sent_logs = "./logs/sent_emails_log.txt"
 
     emails_per_credential = (
         1  # Increase this number if you want to send more emails per credential

@@ -3,7 +3,7 @@ import random
 import os
 import json
 
-def save_data_by_country(input_csv, output_folder='../data/countries'):
+def save_data_by_country(input_csv, output_folder='./data/countries'):
     df = pd.read_csv(input_csv)
     os.makedirs(output_folder, exist_ok=True)
     unique_countries = df['Country'].unique()
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     initial_emails_to_send = 1
     increment_range = (1, 3)
     max_emails_per_day = 25
-    output_filename = "../email_sending_plan.json"
+    output_filename = "./templates/email_sending_plan.json"
 
     email_plan = generate_email_sending_plan(total_days, initial_emails_to_send, increment_range, max_emails_per_day)
     save_to_json(email_plan, output_filename)
