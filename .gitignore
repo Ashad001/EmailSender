@@ -122,12 +122,14 @@ dmypy.json
 cython_debug/
 
 # Private
-credentials-prv.json
-temp_gen.py
-temp.csv
-templates_img.json
-subs.json
-logo.png
-logo.jpg
 data/
 logs/
+credentials-prv.json
+email_sending_plan.json
+templates_img.json
+subs.json
+temp_gen.py
+try.py
+temp.csv
+logo.png
+logo.jpg
