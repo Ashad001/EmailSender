@@ -11,13 +11,12 @@ import random
 import time
 import json
 
-
 class EmailManager:
     def __init__(
         self,
-        credentials_file_path="./credentials.json",
-        templates_file_path="./templates.json",
-        log_file="./logs/sent_emails_log.txt",
+        credentials_file_path="../credentials.json",
+        templates_file_path="../templates.json",
+        log_file="../logs/sent_emails_log.txt",
     ):
         self.credentials_file_path = credentials_file_path
         self.templates_file_path = templates_file_path
@@ -95,14 +94,14 @@ class EmailManager:
 
 if __name__ == "__main__":
     emails_file_path = "email.csv"
-    templates_file_path = "./templates.json"
+    templates_file_path = "../templates.json"
 
-    if not os.path.exists("./logs"):
-        os.mkdir("./logs")
+    if not os.path.exists("../logs"):
+        os.mkdir("../logs")
 
-    error_file = "./logs/error_log.csv"
-    all_logs = "./logs/log.txt"
-    sent_logs = "./logs/sent_emails_log.txt"
+    error_file = "../logs/error_log.csv"
+    all_logs = "../logs/log.txt"
+    sent_logs = "../logs/sent_emails_log.txt"
 
     emails_per_credential = (
         1  # Increase this number if you want to send more emails per credential
@@ -120,13 +119,11 @@ if __name__ == "__main__":
         exit()
 
     email_manager = EmailManager(templates_file_path=templates_file_path)
-    # emails_dataframe = pd.read_csv(emails_file_path,on_bad_lines='warn')
     row_num = 0
     for _ in range((len(emails_dataframe) // emails_per_credential) + 1):
         for _ in range(emails_per_credential):
             if emails_dataframe.empty:
                 break
-            # row = random.choice(emails_dataframe.to_dict(orient='records'))
             if row_num >= len(emails_dataframe):
                 break
             row = emails_dataframe.to_dict(orient="records")[row_num]
