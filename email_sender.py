@@ -1,18 +1,18 @@
 import os
-import pandas as pd
 import ssl
-import smtplib
-import time
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.application import MIMEApplication
-import random
 import time
 import json
+import random
+import smtplib
+import pandas as pd
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 
 from plan_manager import PlanManager
 from utils import generate_email_sending_plan, save_to_json
+from settings import *
 
 class EmailManager:
     def __init__(
@@ -30,7 +30,7 @@ class EmailManager:
         self.load_credentials()
         self.load_templates()
         
-        pm = PlanManager("./logs/current_plan.txt")
+        pm = PlanManager()
         print(pm.current_number)    
         self.curr_day = pm.current_number
         pm.increment_number_for_new_day()
@@ -41,7 +41,7 @@ class EmailManager:
             increment_range = (2, 4)
             output_filename = "./templates/email_sending_plan.json"
 
-            email_plan = generate_email_sending_plan(total_days, initial_emails_to_send, increment_range)
+            email_plan = generate_email_sending_plan(total_days, initial_emails_to_send, increment_range, max_emails_per_day=3)
             save_to_json(email_plan, output_filename)
 
             print(f"Email sending plan generated and saved to {output_filename}")
@@ -56,10 +56,23 @@ class EmailManager:
             credentials_data = json.load(credentials_file)
             self.credentials = credentials_data.get("credentials")
 
+        if self.credentials[0]['email'] == "EMAIL":
+            raise ValueError("Please add your email to the './templates/credentials.json' file.")
+            
+        if self.credentials[0]['password'] == "APP PASSWORD":
+            raise ValueError("Please add your email password to the './templates/credentials.json' file.")
+        
     def load_templates(self):
         with open(self.templates_file_path, "r") as templates_file:
             templates_data = json.load(templates_file)
             self.templates = templates_data.get("templates")
+            
+        if self.templates[0]['subject'] == "SUBJECT":
+            raise ValueError("Please add your email subject to the './templates/templates.json' file.")
+            
+        if self.templates[0]['body'] == "BODY":
+            raise ValueError("Please add your email body to the './templates/templates.json' file.")
+            exit()
 
     def get_current_credential(self):
         return self.credentials[self.current_credential_index]
@@ -82,14 +95,14 @@ class EmailManager:
         msg["To"] = receiver_email
         msg.attach(MIMEText(message, "html"))
 
-        if image_path:
+        if image_path and os.path.exists(image_path):
             image = MIMEImage(open(image_path, "rb").read())
             image.add_header("Content-ID", "<logo>")
             msg.attach(image)
 
-        if attachment_path:
+        if attachment_path and os.path.exists(attachment_path):
             with open(attachment_path, "rb") as pdf_file:
-                pdf_attachment = MIMEApplication(pdf_file.read(), _subtype="pdf")
+                pdf_attachment = MIMEApplication(pdf_file.read(), _subtype=ATTACHMENT_TYPE)
                 pdf_attachment.add_header(
                     "Content-Disposition",
                     "attachment",
@@ -117,7 +130,7 @@ class EmailManager:
 
 
 if __name__ == "__main__":
-    emails_file_path = "./data/email.csv"
+    emails_file_path =  "./data/emails.csv"
     templates_file_path = "./templates/templates.json"
 
     if not os.path.exists("./logs"):
@@ -132,49 +145,58 @@ if __name__ == "__main__":
     )
 
     if not os.path.exists(emails_file_path):
-        print(
+        raise FileNotFoundError(
             'Please create a csv file with the name "email.csv" and add the emails to send to in the "Email" column.'
         )
-        exit()
 
-    emails_dataframe = pd.read_csv(emails_file_path, on_bad_lines="warn")
+    emails_dataframe = pd.read_csv(emails_file_path, encoding="utf-8", on_bad_lines='warn')
+    # read column names from the csv file
+    print(emails_dataframe.shape)
+    columns = emails_dataframe.columns.tolist()
+    print(columns)
     if "Email" not in emails_dataframe.columns:
-        print('Please add the emails to send to in the "Email" column of the csv file.')
-        exit()
-
+        raise ValueError('Please add the emails to send to in the "Email" column of the csv file.')
     email_manager = EmailManager(templates_file_path=templates_file_path)
     row_num = 0
     email_sends_max = random.randint(email_manager.day_plan['min'], email_manager.day_plan['max'])
     email_sends_max *= len(email_manager.credentials)
     email_sends_count = 0
-    
-    print(email_sends_max)
+
     flag = False
-    for _ in range((len(emails_dataframe) // emails_per_credential) + 1):
+    for _ in range((len(emails_dataframe) // emails_per_credential) + 1):        
         for _ in range(emails_per_credential):
+            print("---------")
             if email_sends_count >= email_sends_max:
                 flag = True
                 continue
+            print('-')
             if emails_dataframe.empty:
                 break
             if row_num >= len(emails_dataframe):
                 break
             row = emails_dataframe.to_dict(orient="records")[row_num]
-            country = row["Country"]
-            tag = row["Tag"]
-            name = row["Name"]
-            receiver_email = row["Email"]
+            for col in columns:
+                if pd.isnull(row[col]):
+                    row[col] = ""
+            name = row.get("Name", "")
+            tag = row.get("Tag", "")
+            country = row.get("Country", "")
+            receiver_email = row.get("Email", "") 
+            if receiver_email == "":
+                print("Receiver email is empty. Skipping...")
+                continue
+            
             row_num += 1
             selected_template = random.choice(email_manager.templates)
 
             subject = selected_template["subject"]
-            subject = subject.replace("[USERNAME]", name)
-            subject = subject.replace("[TAG]", tag)
+            subject = subject.replace(USERNAME_STRING_IN_MAILS, name)
+            subject = subject.replace(TAG_STRING_IN_MAILS, tag)
             # Replace other tags with their values here
 
             message = selected_template["body"]
-            message = message.replace("[USERNAME]", name)
-            message = message.replace("[TAG]", tag)
+            message = message.replace(USERNAME_STRING_IN_MAILS, name)
+            message = message.replace(TAG_STRING_IN_MAILS, tag)
             # Replace other tags with their values here
 
             # attachment_path = "path/to/your/attachment.pdf"
@@ -190,8 +212,8 @@ if __name__ == "__main__":
                     receiver_email,
                     subject,
                     message,
-                    image_path=None,
-                    attachment_path=None,
+                    image_path=IMAGE_PATH,
+                    attachment_path=ATTACHMENT_PATH,
                 )  # Add images and attachments here: 
                 print(
                     f'Email sent successfully to: {receiver_email} using {email_manager.get_current_credential()["email"]}'
